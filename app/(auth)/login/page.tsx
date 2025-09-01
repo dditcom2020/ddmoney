@@ -19,6 +19,15 @@ type LoginResp = {
   message?: string;
 };
 
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
+
 export default function LoginPage() {
   const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
@@ -59,7 +68,7 @@ export default function LoginPage() {
           text: "ยินดีต้อนรับกลับมา!",
           confirmButtonText: "ตกลง",
         });
-        // TODO: เก็บ token, redirect
+        // TODO: เก็บ token / redirect
         // router.push("/dashboard");
       } else {
         await MySwal.fire({
@@ -69,11 +78,11 @@ export default function LoginPage() {
           confirmButtonText: "ตกลง",
         });
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       await MySwal.fire({
         icon: "error",
         title: "ข้อผิดพลาด",
-        text: err?.message ?? "เกิดข้อผิดพลาดในการเข้าสู่ระบบ",
+        text: getErrorMessage(err) ?? "เกิดข้อผิดพลาดในการเข้าสู่ระบบ",
         confirmButtonText: "ตกลง",
       });
     } finally {
@@ -103,12 +112,10 @@ export default function LoginPage() {
         />
       </div>
 
-      {/* ฟอร์มล็อกอิน */}
       <form
         onSubmit={handleLogin}
         className="form-group my-10 w-full max-w-md mx-auto px-4 flex flex-col items-stretch justify-center"
       >
-        {/* Username or Email */}
         <div className="relative w-full">
           {isEmail ? (
             <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -127,7 +134,6 @@ export default function LoginPage() {
           />
         </div>
 
-        {/* Password */}
         <div className="relative w-full">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input

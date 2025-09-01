@@ -2,25 +2,16 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import {
-  User,
-  Lock,
-  Check,
-  Mail,
-  IdCard,
-  Phone,
-  Eye,
-  EyeOff,
-} from "lucide-react";
-import Link from "next/link";
+import { User, Lock, Check, Mail, IdCard, Phone, Eye, EyeOff } from "lucide-react";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import "sweetalert2/dist/sweetalert2.min.css";
 import { apiClient } from "@/lib/api/client";
 import { buildRegisterFormData } from "@/lib/api/register";
-import { useRouter } from "next/navigation";
 
 type FormState = {
   username: string;
@@ -36,6 +27,15 @@ type ApiResp = {
   error?: string;
   message?: string;
 };
+
+function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  try {
+    return JSON.stringify(err);
+  } catch {
+    return String(err);
+  }
+}
 
 export default function Register() {
   const MySwal = withReactContent(Swal);
@@ -70,16 +70,25 @@ export default function Register() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  // handler รวม
+  // เปลี่ยนค่า input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+  };
+
+  // (ทางเลือก) เช็กไฟล์เบื้องต้นก่อนส่ง
+  const validateFile = (f: File | null): string | null => {
+    if (!f) return null;
+    const maxMB = 5;
+    if (f.size > maxMB * 1024 * 1024) return `ไฟล์ต้องไม่เกิน ${maxMB}MB`;
+    if (!/^image\/(png|jpeg|jpg|webp|gif)$/i.test(f.type)) return "รองรับเฉพาะรูปภาพเท่านั้น";
+    return null;
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (submitting) return;
 
-    // validate เบื้องต้น
+    // validate ฟิลด์
     if (!form.username || !form.password || !form.email) {
       await MySwal.fire({
         icon: "error",
@@ -98,13 +107,20 @@ export default function Register() {
       });
       return;
     }
+    const fileErr = validateFile(file);
+    if (fileErr) {
+      await MySwal.fire({
+        icon: "error",
+        title: "ไฟล์ไม่ถูกต้อง",
+        text: fileErr,
+        confirmButtonText: "ตกลง",
+      });
+      return;
+    }
 
     setSubmitting(true);
     try {
       const fd = buildRegisterFormData({ ...form, file });
-
-      // (ตัวเลือก) debug formdata ก่อนส่ง
-      // for (const [k, v] of fd.entries()) console.log(k, v);
 
       const data = await apiClient<ApiResp>("/api/register", {
         method: "POST",
@@ -115,16 +131,15 @@ export default function Register() {
         icon: "success",
         title: "สมัครสมาชิกสำเร็จ 🎉",
         text: data.message ?? "ยินดีต้อนรับ!",
-        confirmButtonText: "ตกลง",
+        confirmButtonText: "ไปหน้าเข้าสู่ระบบ",
       });
 
-      // ไปหน้า login หรือหน้าอื่นตามต้องการ
-      // router.push("/login");
-    } catch (err: any) {
+      router.push("/login");
+    } catch (err: unknown) {
       await MySwal.fire({
         icon: "error",
         title: "สมัครไม่สำเร็จ",
-        text: err?.message ?? "ไม่สามารถสมัครได้ในขณะนี้",
+        text: getErrorMessage(err) ?? "ไม่สามารถสมัครได้ในขณะนี้",
         confirmButtonText: "ตกลง",
       });
     } finally {
