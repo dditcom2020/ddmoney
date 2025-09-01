@@ -23,10 +23,7 @@ export default function Regsiter() {
       </Link>
 
       <div className="register form flex justify-center my-10">
-        <label htmlFor="uploadImage">
-          <Image className="cursor-pointer" src="/images/Logoddmoney.png" alt="" width={250} height={250} />
-        </label>
-        <Input className="hidden" id="uploadImage" type="file" accept="image/*" />
+          <Image className="" src="/images/Logoddmoney.png" alt="" width={250} height={250} />
       </div>
 
       {/* ======== เริ่มส่วนฟอร์ม (เหลือ 2 ช่อง: ผู้ใช้/อีเมล + รหัสผ่าน) ======== */}

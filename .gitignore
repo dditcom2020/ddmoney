@@ -37,3 +37,6 @@ pnpm-debug.log*
 Thumbs.db
 .idea/
 .vscode/
+
+# Skip the developing file
+app/(auth)/test
