@@ -4,11 +4,23 @@ import { useState, useEffect } from "react";
 import Image from "next/image";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Lock, Check, Mail, IdCard, Phone, Eye, EyeOff } from "lucide-react";
+import {
+  User,
+  Lock,
+  Check,
+  Mail,
+  IdCard,
+  Phone,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import Link from "next/link";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import "sweetalert2/dist/sweetalert2.min.css";
+import { apiClient } from "@/lib/api/client";
+import { buildRegisterFormData } from "@/lib/api/register";
+import { useRouter } from "next/navigation";
 
 type FormState = {
   username: string;
@@ -23,13 +35,15 @@ type ApiResp = {
   ok?: boolean;
   error?: string;
   message?: string;
-  // แนบ field อื่น ๆ ที่ backend อาจส่งกลับมาได้ตามจริง
 };
 
 export default function Register() {
   const MySwal = withReactContent(Swal);
+  const router = useRouter();
+
   const [showPwd, setShowPwd] = useState(false);
   const [showPwd2, setShowPwd2] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // รูปโปรไฟล์
   const [file, setFile] = useState<File | null>(null);
@@ -63,6 +77,7 @@ export default function Register() {
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (submitting) return;
 
     // validate เบื้องต้น
     if (!form.username || !form.password || !form.email) {
@@ -84,45 +99,47 @@ export default function Register() {
       return;
     }
 
-    const fd = new FormData();
-    // แนบฟิลด์ทั้งหมด
-    (Object.entries(form) as [keyof FormState, string][])
-      .forEach(([k, v]) => fd.append(k, v));
-    if (file) fd.append("file", file);
-
-    const res = await fetch("/api/register", { method: "POST", body: fd });
-
-    let data: ApiResp = {};
+    setSubmitting(true);
     try {
-      data = (await res.json()) as ApiResp;
-    } catch {
-      // กรณี response ไม่ใช่ JSON ก็ปล่อยให้เป็น {} ไป
-    }
+      const fd = buildRegisterFormData({ ...form, file });
 
-    if (!res.ok) {
+      // (ตัวเลือก) debug formdata ก่อนส่ง
+      // for (const [k, v] of fd.entries()) console.log(k, v);
+
+      const data = await apiClient<ApiResp>("/api/register", {
+        method: "POST",
+        body: fd,
+      });
+
+      await MySwal.fire({
+        icon: "success",
+        title: "สมัครสมาชิกสำเร็จ 🎉",
+        text: data.message ?? "ยินดีต้อนรับ!",
+        confirmButtonText: "ตกลง",
+      });
+
+      // ไปหน้า login หรือหน้าอื่นตามต้องการ
+      // router.push("/login");
+    } catch (err: any) {
       await MySwal.fire({
         icon: "error",
         title: "สมัครไม่สำเร็จ",
-        text: data.error ?? data.message ?? res.statusText,
+        text: err?.message ?? "ไม่สามารถสมัครได้ในขณะนี้",
         confirmButtonText: "ตกลง",
       });
-      return;
+    } finally {
+      setSubmitting(false);
     }
-
-    await MySwal.fire({
-      icon: "success",
-      title: "สมัครสมาชิกสำเร็จ 🎉",
-      confirmButtonText: "ตกลง",
-    });
-    // TODO: redirect ตามที่ต้องการ เช่น:
-    // router.push("/login");
   };
 
   return (
     <div className="register section">
       <form onSubmit={handleSubmit}>
         <Link href="/" className="inline-block">
-          <Button className="m-5 cursor-pointer p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white">
+          <Button
+            type="button"
+            className="m-5 cursor-pointer p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white"
+          >
             หน้าแรก
           </Button>
         </Link>
@@ -136,7 +153,7 @@ export default function Register() {
                 alt="เลือกโปรไฟล์"
                 fill
                 sizes="250px"
-                className="object-cover"
+                className="object-cover h-auto w-48"
                 priority
               />
             </div>
@@ -162,6 +179,7 @@ export default function Register() {
               className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
               placeholder="ชื่อผู้ใช้งาน"
               autoComplete="username"
+              required
             />
           </div>
 
@@ -176,6 +194,7 @@ export default function Register() {
               type={showPwd ? "text" : "password"}
               placeholder="รหัสผ่าน"
               autoComplete="new-password"
+              required
             />
             <button
               type="button"
@@ -198,6 +217,7 @@ export default function Register() {
               type={showPwd2 ? "text" : "password"}
               placeholder="ยืนยันรหัสผ่าน"
               autoComplete="new-password"
+              required
             />
             <button
               type="button"
@@ -220,6 +240,7 @@ export default function Register() {
               placeholder="อีเมล"
               type="email"
               autoComplete="email"
+              required
             />
           </div>
 
@@ -252,10 +273,12 @@ export default function Register() {
 
           <Button
             type="submit"
-            className="mt-5 w-full p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white"
+            disabled={submitting}
+            className="cursor-pointer mt-5 w-full p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white disabled:opacity-60"
           >
-            สมัครสมาชิก
+            {submitting ? "กำลังสมัคร..." : "สมัครสมาชิก"}
           </Button>
+
           <Link className="mt-2 text-center block" href="/login">
             หากท่านมีบัญชีอยู่แล้ว <u>คลิก!</u>
           </Link>
