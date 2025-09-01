@@ -8,7 +8,7 @@ import { User, Lock, Check, Mail, IdCard, Phone, Eye, EyeOff } from "lucide-reac
 import Link from "next/link";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
-import 'sweetalert2/dist/sweetalert2.min.css';
+import "sweetalert2/dist/sweetalert2.min.css";
 
 type FormState = {
   username: string;
@@ -17,6 +17,13 @@ type FormState = {
   email: string;
   fullName: string;
   phone: string;
+};
+
+type ApiResp = {
+  ok?: boolean;
+  error?: string;
+  message?: string;
+  // แนบ field อื่น ๆ ที่ backend อาจส่งกลับมาได้ตามจริง
 };
 
 export default function Register() {
@@ -40,64 +47,81 @@ export default function Register() {
 
   // preview รูป
   useEffect(() => {
-    if (!file) { setPreview(null); return; }
+    if (!file) {
+      setPreview(null);
+      return;
+    }
     const url = URL.createObjectURL(file);
     setPreview(url);
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
   // handler รวม
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
-
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
 
-    // ตัวอย่าง validate เบื้องต้น
+    // validate เบื้องต้น
     if (!form.username || !form.password || !form.email) {
-      MySwal.fire({
+      await MySwal.fire({
         icon: "error",
         title: "กรุณากรอกข้อมูลให้ครบถ้วน!",
         text: "ตรวจสอบข้อมูลของท่านให้เรียบร้อย!",
-        confirmButtonText: "ตกลง"
-      })
+        confirmButtonText: "ตกลง",
+      });
       return;
     }
     if (form.password !== form.confirm) {
-      MySwal.fire({
+      await MySwal.fire({
         icon: "warning",
-        title: "รหัผผ่านของท่านไม่ตรงกัน!",
-        text: "กรุณาลองใหม่ อีกครั้ง!",
-        confirmButtonText: "ตกลง"
-      })
+        title: "รหัสผ่านของท่านไม่ตรงกัน!",
+        text: "กรุณาลองใหม่อีกครั้ง!",
+        confirmButtonText: "ตกลง",
+      });
       return;
     }
 
     const fd = new FormData();
     // แนบฟิลด์ทั้งหมด
-    Object.entries(form).forEach(([k, v]) => fd.append(k, v));
+    (Object.entries(form) as [keyof FormState, string][])
+      .forEach(([k, v]) => fd.append(k, v));
     if (file) fd.append("file", file);
 
     const res = await fetch("/api/register", { method: "POST", body: fd });
-    const data = await res.json().catch(() => ({} as any));
+
+    let data: ApiResp = {};
+    try {
+      data = (await res.json()) as ApiResp;
+    } catch {
+      // กรณี response ไม่ใช่ JSON ก็ปล่อยให้เป็น {} ไป
+    }
 
     if (!res.ok) {
-      alert(`สมัครไม่สำเร็จ: ${data?.error ?? res.statusText}`);
+      await MySwal.fire({
+        icon: "error",
+        title: "สมัครไม่สำเร็จ",
+        text: data.error ?? data.message ?? res.statusText,
+        confirmButtonText: "ตกลง",
+      });
       return;
     }
-    alert("สมัครสมาชิกสำเร็จ 🎉");
-    // ทำอย่างอื่นต่อ เช่น redirect
+
+    await MySwal.fire({
+      icon: "success",
+      title: "สมัครสมาชิกสำเร็จ 🎉",
+      confirmButtonText: "ตกลง",
+    });
+    // TODO: redirect ตามที่ต้องการ เช่น:
+    // router.push("/login");
   };
 
   return (
     <div className="register section">
       <form onSubmit={handleSubmit}>
-        <Link href="/">
+        <Link href="/" className="inline-block">
           <Button className="m-5 cursor-pointer p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white">
             หน้าแรก
           </Button>
@@ -113,6 +137,7 @@ export default function Register() {
                 fill
                 sizes="250px"
                 className="object-cover"
+                priority
               />
             </div>
           </label>
@@ -136,6 +161,7 @@ export default function Register() {
               onChange={handleChange}
               className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
               placeholder="ชื่อผู้ใช้งาน"
+              autoComplete="username"
             />
           </div>
 
@@ -153,7 +179,7 @@ export default function Register() {
             />
             <button
               type="button"
-              onClick={() => setShowPwd(v => !v)}
+              onClick={() => setShowPwd((v) => !v)}
               aria-label={showPwd ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             >
@@ -175,7 +201,7 @@ export default function Register() {
             />
             <button
               type="button"
-              onClick={() => setShowPwd2(v => !v)}
+              onClick={() => setShowPwd2((v) => !v)}
               aria-label={showPwd2 ? "ซ่อนรหัสผ่าน" : "แสดงรหัสผ่าน"}
               className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground"
             >
@@ -206,6 +232,7 @@ export default function Register() {
               onChange={handleChange}
               className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
               placeholder="ชื่อ - นามสกุล"
+              autoComplete="name"
             />
           </div>
 
@@ -219,13 +246,17 @@ export default function Register() {
               className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
               placeholder="เบอร์โทรศัพท์"
               inputMode="tel"
+              autoComplete="tel"
             />
           </div>
 
-          <Button type="submit" className="mt-5 w-full p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white">
+          <Button
+            type="submit"
+            className="mt-5 w-full p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white"
+          >
             สมัครสมาชิก
           </Button>
-          <Link className="mt-2 text-center" href="/login">
+          <Link className="mt-2 text-center block" href="/login">
             หากท่านมีบัญชีอยู่แล้ว <u>คลิก!</u>
           </Link>
         </div>

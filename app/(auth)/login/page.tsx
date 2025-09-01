@@ -23,7 +23,7 @@ export default function Regsiter() {
       </Link>
 
       <div className="register form flex justify-center my-10">
-          <Image className="" src="/images/Logoddmoney.png" alt="" width={250} height={250} />
+          <Image className="h-auto w-48" src="/images/Logoddmoney.png" alt="" width={250} height={250} priority />
       </div>
 
       {/* ======== เริ่มส่วนฟอร์ม (เหลือ 2 ช่อง: ผู้ใช้/อีเมล + รหัสผ่าน) ======== */}
