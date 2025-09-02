@@ -1,3 +1,4 @@
+// app/client/register/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -11,15 +12,15 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import "sweetalert2/dist/sweetalert2.min.css";
 import { apiClient } from "@/lib/api/client";
-import { buildRegisterFormData } from "@/lib/api/register";
 
 type FormState = {
-  username: string;
-  password: string;
-  confirm: string;
-  email: string;
-  fullName: string;
-  phone: string;
+  citizenId: string;  // personal_id
+  firstName: string;  // firstname
+  lastName: string;   // lastname
+  password: string;   // จะ hash ฝั่ง server
+  confirm: string;    // เทียบกับ password ที่ client
+  email: string;      // email
+  phone: string;      // phone
 };
 
 type ApiResp = {
@@ -30,11 +31,7 @@ type ApiResp = {
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
-  try {
-    return JSON.stringify(err);
-  } catch {
-    return String(err);
-  }
+  try { return JSON.stringify(err); } catch { return String(err); }
 }
 
 export default function Register() {
@@ -51,11 +48,12 @@ export default function Register() {
 
   // ฟอร์ม
   const [form, setForm] = useState<FormState>({
-    username: "",
+    citizenId: "",
+    firstName: "",
+    lastName: "",
     password: "",
     confirm: "",
     email: "",
-    fullName: "",
     phone: "",
   });
 
@@ -70,12 +68,13 @@ export default function Register() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  // เปลี่ยนค่า input
+  // เปลี่ยนค่า input (ไม่กรอง ไม่ตรวจอะไรทั้งสิ้น)
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
+    const { name, value } = e.target;
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // (ทางเลือก) เช็กไฟล์เบื้องต้นก่อนส่ง
+  // (ทางเลือก) เช็กไฟล์เบื้องต้นก่อนส่งเล็กน้อย
   const validateFile = (f: File | null): string | null => {
     if (!f) return null;
     const maxMB = 5;
@@ -88,25 +87,28 @@ export default function Register() {
     e.preventDefault();
     if (submitting) return;
 
-    // validate ฟิลด์
-    if (!form.username || !form.password || !form.email) {
+    // ✅ ต้องมีอย่างน้อย 8 ตัวอักษร
+    if (!form.password || form.password.length < 8) {
       await MySwal.fire({
-        icon: "error",
-        title: "กรุณากรอกข้อมูลให้ครบถ้วน!",
-        text: "ตรวจสอบข้อมูลของท่านให้เรียบร้อย!",
+        icon: "warning",
+        title: "รหัสผ่านสั้นเกินไป",
+        text: "รหัสผ่านต้องมีอย่างน้อย 8 ตัวอักษร",
         confirmButtonText: "ตกลง",
       });
       return;
     }
+
+    // อย่างน้อยให้ผู้ใช้ทราบถ้ารหัสผ่านไม่ตรงกัน
     if (form.password !== form.confirm) {
       await MySwal.fire({
         icon: "warning",
-        title: "รหัสผ่านของท่านไม่ตรงกัน!",
-        text: "กรุณาลองใหม่อีกครั้ง!",
+        title: "รหัสผ่านไม่ตรงกัน!",
+        text: "กรุณาลองใหม่อีกครั้ง",
         confirmButtonText: "ตกลง",
       });
       return;
     }
+
     const fileErr = validateFile(file);
     if (fileErr) {
       await MySwal.fire({
@@ -120,21 +122,29 @@ export default function Register() {
 
     setSubmitting(true);
     try {
-      const fd = buildRegisterFormData({ ...form, file });
+      // ส่งคีย์ให้ตรงกับ /api/register
+      const f = new FormData();
+      f.append("citizenId", form.citizenId ?? "");
+      f.append("firstName", form.firstName ?? "");
+      f.append("lastName", form.lastName ?? "");
+      f.append("password", form.password ?? "");
+      f.append("email", form.email ?? "");
+      f.append("phone", form.phone ?? "");
+      if (file) f.append("file", file);
 
       const data = await apiClient<ApiResp>("/api/register", {
         method: "POST",
-        body: fd,
+        body: f, // ปล่อยให้ browser ใส่ Content-Type boundary เอง
       });
 
       await MySwal.fire({
         icon: "success",
         title: "สมัครสมาชิกสำเร็จ 🎉",
         text: data.message ?? "ยินดีต้อนรับ!",
-        confirmButtonText: "ไปหน้าเข้าสู่ระบบ",
+        confirmButtonText: "ตกลง",
       });
 
-      router.push("/login");
+      // router.push("/login");
     } catch (err: unknown) {
       await MySwal.fire({
         icon: "error",
@@ -184,17 +194,44 @@ export default function Register() {
 
         {/* ฟอร์มกรอกข้อมูล */}
         <div className="form-group my-10 w-full max-w-md mx-auto px-4 flex flex-col items-stretch justify-center">
-          {/* Username */}
+          {/* Citizen ID (personal_id) */}
+          <div className="relative w-full">
+            <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              name="citizenId"
+              value={form.citizenId}
+              onChange={handleChange}
+              className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
+              placeholder="เลขบัตรประชาชน"
+              autoComplete="off"
+              required
+            />
+          </div>
+
+          {/* First Name (firstname) */}
           <div className="relative w-full">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
-              name="username"
-              value={form.username}
+              name="firstName"
+              value={form.firstName}
               onChange={handleChange}
               className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
-              placeholder="ชื่อผู้ใช้งาน"
-              autoComplete="username"
+              placeholder="ชื่อ"
+              autoComplete="given-name"
               required
+            />
+          </div>
+
+          {/* Last Name (lastname) — ไม่บังคับ */}
+          <div className="relative w-full">
+            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              name="lastName"
+              value={form.lastName}
+              onChange={handleChange}
+              className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
+              placeholder="นามสกุล"
+              autoComplete="family-name"
             />
           </div>
 
@@ -207,8 +244,9 @@ export default function Register() {
               onChange={handleChange}
               className="w-full my-2 h-11 pl-9 pr-10 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
               type={showPwd ? "text" : "password"}
-              placeholder="รหัสผ่าน"
+              placeholder="รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)"
               autoComplete="new-password"
+              minLength={8}   /* ✅ บังคับขั้นต่ำ 8 */
               required
             />
             <button
@@ -232,6 +270,7 @@ export default function Register() {
               type={showPwd2 ? "text" : "password"}
               placeholder="ยืนยันรหัสผ่าน"
               autoComplete="new-password"
+              minLength={8}   /* ✅ ให้สอดคล้องกับรหัสผ่าน */
               required
             />
             <button
@@ -259,19 +298,6 @@ export default function Register() {
             />
           </div>
 
-          {/* Full name */}
-          <div className="relative w-full">
-            <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-            <Input
-              name="fullName"
-              value={form.fullName}
-              onChange={handleChange}
-              className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
-              placeholder="ชื่อ - นามสกุล"
-              autoComplete="name"
-            />
-          </div>
-
           {/* Phone */}
           <div className="relative w-full">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
@@ -283,6 +309,7 @@ export default function Register() {
               placeholder="เบอร์โทรศัพท์"
               inputMode="tel"
               autoComplete="tel"
+              required
             />
           </div>
 
