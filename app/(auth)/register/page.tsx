@@ -34,6 +34,9 @@ function getErrorMessage(err: unknown): string {
   try { return JSON.stringify(err); } catch { return String(err); }
 }
 
+// ✅ helper: คงไว้เฉพาะตัวเลข
+const onlyDigits = (s: string) => s.replace(/\D/g, "");
+
 export default function Register() {
   const MySwal = withReactContent(Swal);
   const router = useRouter();
@@ -57,6 +60,21 @@ export default function Register() {
     phone: "",
   });
 
+  // ✅ handler เฉพาะ field ตัวเลข (รับ maxLen)
+  const setDigits =
+    (name: keyof FormState, maxLen?: number) =>
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const digits = onlyDigits(e.target.value).slice(0, maxLen ?? 99);
+      setForm((prev) => ({ ...prev, [name]: digits }));
+    };
+
+  // ✅ กัน key ที่ไม่ใช่ตัวเลขระหว่างพิมพ์ (ยังวาง paste ได้แต่เราตัดใน onChange แล้ว)
+  const allowDigitKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    const allow = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
+    if (allow.includes(e.key)) return;
+    if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+  };
+
   // preview รูป
   useEffect(() => {
     if (!file) {
@@ -68,7 +86,7 @@ export default function Register() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  // เปลี่ยนค่า input (ไม่กรอง ไม่ตรวจอะไรทั้งสิ้น)
+  // เปลี่ยนค่า input ทั่วไป
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
@@ -144,7 +162,7 @@ export default function Register() {
         confirmButtonText: "ตกลง",
       });
 
-      // router.push("/login");
+      router.push("/login");
     } catch (err: unknown) {
       await MySwal.fire({
         icon: "error",
@@ -194,17 +212,22 @@ export default function Register() {
 
         {/* ฟอร์มกรอกข้อมูล */}
         <div className="form-group my-10 w-full max-w-md mx-auto px-4 flex flex-col items-stretch justify-center">
-          {/* Citizen ID (personal_id) */}
+          {/* Citizen ID (personal_id) — เฉพาะตัวเลข 13 หลัก */}
           <div className="relative w-full">
             <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               name="citizenId"
               value={form.citizenId}
-              onChange={handleChange}
+              onChange={setDigits("citizenId", 13)}
+              onKeyDown={allowDigitKeys}
+              inputMode="numeric"
+              pattern="\d*"
+              maxLength={13}
               className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
-              placeholder="เลขบัตรประชาชน"
+              placeholder="เลขบัตรประชาชน (13 หลัก)"
               autoComplete="off"
               required
+              type="text"
             />
           </div>
 
@@ -246,7 +269,7 @@ export default function Register() {
               type={showPwd ? "text" : "password"}
               placeholder="รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)"
               autoComplete="new-password"
-              minLength={8}   /* ✅ บังคับขั้นต่ำ 8 */
+              minLength={8}
               required
             />
             <button
@@ -270,7 +293,7 @@ export default function Register() {
               type={showPwd2 ? "text" : "password"}
               placeholder="ยืนยันรหัสผ่าน"
               autoComplete="new-password"
-              minLength={8}   /* ✅ ให้สอดคล้องกับรหัสผ่าน */
+              minLength={8}
               required
             />
             <button
@@ -298,18 +321,22 @@ export default function Register() {
             />
           </div>
 
-          {/* Phone */}
+          {/* Phone — เฉพาะตัวเลข 10 หลัก (ปรับได้) */}
           <div className="relative w-full">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
               name="phone"
               value={form.phone}
-              onChange={handleChange}
+              onChange={setDigits("phone", 10)}
+              onKeyDown={allowDigitKeys}
+              inputMode="tel"
+              pattern="\d*"
+              maxLength={10}
               className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
               placeholder="เบอร์โทรศัพท์"
-              inputMode="tel"
               autoComplete="tel"
               required
+              type="text"
             />
           </div>
 

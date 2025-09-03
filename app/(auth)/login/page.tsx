@@ -5,9 +5,14 @@ import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Lock, Mail, Eye, EyeOff } from "lucide-react";
+import { IdCard, Lock, Eye, EyeOff } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
-import { buildLoginFormData, type LoginForm } from "@/lib/api/login";
+import {
+  buildLoginFormData,
+  validateLoginForm,
+  sanitizeCitizenId,
+  type LoginForm,
+} from "@/lib/api/login";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import "sweetalert2/dist/sweetalert2.min.css";
@@ -21,31 +26,53 @@ type LoginResp = {
 
 function getErrorMessage(err: unknown): string {
   if (err instanceof Error) return err.message;
-  try {
-    return JSON.stringify(err);
-  } catch {
-    return String(err);
-  }
+  try { return JSON.stringify(err); } catch { return String(err); }
 }
 
+// ✅ helper: คงไว้เฉพาะตัวเลข
+const onlyDigits = (s: string) => s.replace(/\D/g, "");
+
+// ✅ กันคีย์ที่ไม่ใช่ตัวเลขระหว่างพิมพ์ (ยังวาง paste ได้ แต่เราตัดใน onChange แล้ว)
+const allowDigitKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const allow = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
+  if (allow.includes(e.key)) return;
+  if (!/^[0-9]$/.test(e.key)) e.preventDefault();
+};
+
 export default function LoginPage() {
-  const [identifier, setIdentifier] = useState("");
+  const [citizenId, setCitizenId] = useState("");
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   const MySwal = withReactContent(Swal);
-  const isEmail = identifier.includes("@");
 
   async function handleLogin(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (submitting) return;
 
-    if (!identifier || !password) {
+    if (!citizenId || !password) {
       await MySwal.fire({
         icon: "error",
         title: "ข้อมูลไม่ครบถ้วน",
-        text: "กรุณากรอกทั้งชื่อผู้ใช้งาน/อีเมล และรหัสผ่าน",
+        text: "กรุณากรอกเลขบัตรประชาชนและรหัสผ่าน",
+        confirmButtonText: "ตกลง",
+      });
+      return;
+    }
+
+    // ใช้ helper จาก /lib/api/login.ts ให้ตรงกันทั้งฝั่ง UI/Lib/Backend
+    const form: LoginForm = {
+      personal_id: sanitizeCitizenId(citizenId),
+      password,
+    };
+
+    const check = validateLoginForm(form); // ✅ ตอนนี้เช็กแค่รหัสผ่าน ≥ 8 ตัวอักษร
+    if (!check.ok) {
+      await MySwal.fire({
+        icon: "warning",
+        title: "รูปแบบข้อมูลไม่ถูกต้อง",
+        text: check.message ?? "โปรดตรวจสอบข้อมูลอีกครั้ง",
         confirmButtonText: "ตกลง",
       });
       return;
@@ -53,8 +80,7 @@ export default function LoginPage() {
 
     setSubmitting(true);
     try {
-      const form: LoginForm = { identifier, password };
-      const fd = buildLoginFormData(form);
+      const fd = buildLoginFormData(form); // -> personal_id + password
 
       const data = await apiClient<LoginResp>("/api/login", {
         method: "POST",
@@ -116,24 +142,25 @@ export default function LoginPage() {
         onSubmit={handleLogin}
         className="form-group my-10 w-full max-w-md mx-auto px-4 flex flex-col items-stretch justify-center"
       >
+        {/* เลขบัตรประชาชน — เฉพาะตัวเลข 13 หลัก */}
         <div className="relative w-full">
-          {isEmail ? (
-            <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          ) : (
-            <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-          )}
+          <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
-            value={identifier}
-            onChange={(e) => setIdentifier(e.target.value)}
+            value={citizenId}
+            onChange={(e) => setCitizenId(onlyDigits(e.target.value).slice(0, 13))}
+            onKeyDown={allowDigitKeys}
+            inputMode="numeric"
+            pattern="\d*"
+            maxLength={13}
             className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
-            placeholder="ชื่อผู้ใช้งาน หรือ อีเมล"
+            placeholder="เลขบัตรประชาชน (13 หลัก)"
+            autoComplete="off"
             type="text"
-            inputMode="email"
-            autoComplete="username email"
             required
           />
         </div>
 
+        {/* รหัสผ่าน — อย่างน้อย 8 ตัวอักษร (ไม่บังคับภาษา) */}
         <div className="relative w-full">
           <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
           <Input
@@ -141,8 +168,9 @@ export default function LoginPage() {
             onChange={(e) => setPassword(e.target.value)}
             className="w-full my-2 h-11 pl-9 pr-10 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
             type={showPwd ? "text" : "password"}
-            placeholder="รหัสผ่าน"
+            placeholder="รหัสผ่าน (อย่างน้อย 8 ตัวอักษร)"
             autoComplete="current-password"
+            minLength={8}
             required
           />
           <button
