@@ -16,6 +16,7 @@ import {
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import "sweetalert2/dist/sweetalert2.min.css";
+import { useRouter } from "next/navigation";
 
 type LoginResp = {
   ok?: boolean;
@@ -44,6 +45,8 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [showPwd, setShowPwd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const router = useRouter();
+  
 
   const MySwal = withReactContent(Swal);
 
@@ -77,7 +80,7 @@ export default function LoginPage() {
       });
       return;
     }
-
+    
     setSubmitting(true);
     try {
       const fd = buildLoginFormData(form); // -> personal_id + password
@@ -95,7 +98,7 @@ export default function LoginPage() {
           confirmButtonText: "ตกลง",
         });
         // TODO: เก็บ token / redirect
-        // router.push("/dashboard");
+        router.push("/dashboard");
       } else {
         await MySwal.fire({
           icon: "error",
@@ -114,6 +117,7 @@ export default function LoginPage() {
     } finally {
       setSubmitting(false);
     }
+
   }
 
   return (
