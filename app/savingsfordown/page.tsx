@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/card";
 import NavBar from "@/components/Navbar";
 
-export default function savingsfordown() {
+export default function Savingsfordown() {
   const { data: products, error, isLoading } = useSWR<Product[]>("/api/showproduct", fetcher);
   // ...
   return (

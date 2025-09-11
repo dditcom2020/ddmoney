@@ -20,7 +20,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-export default function makealist() {
+export default function Makealist() {
   return(
     <div className="home-section">
       <NavBar/>
