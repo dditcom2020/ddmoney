@@ -2,6 +2,7 @@
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/server";
 import LogoutButton from "@/components/LogoutButton";
+import NavBar from "@/components/Navbar";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -14,13 +15,22 @@ export default async function DashboardPage() {
     redirect("/403");
   }
 
-  // ถึงตรงนี้ TS รู้แน่ๆ ว่า auth.ok === true
   const user = auth.user;
 
   return (
-    <main className="p-6">
-      <h1 className="text-xl font-bold">แดชบอร์ดผู้ดูแลระบบ (Admin) {user.firstname ?? ""}</h1>
-      <LogoutButton></LogoutButton>
-    </main>
+    <>
+      {/* นำ Navigation มาวางบนสุดของ Dashboard */}
+      <NavBar />
+
+      <main className="p-6">
+        <h1 className="text-xl font-bold">
+          แดชบอร์ดผู้ดูแลระบบ (Admin) {user.firstname ?? ""}
+        </h1>
+        <div className="mt-4">
+          <LogoutButton />
+        </div>
+        {/* เนื้อหา Dashboard อื่น ๆ ต่อจากนี้ */}
+      </main>
+    </>
   );
 }

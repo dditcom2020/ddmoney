@@ -233,7 +233,7 @@ function ShowProductBase({
 
   // ---------- CARD (เดิม) ----------
   return (
-    <Card className={cn("overflow-hidden group", className)}>
+    <Card className={cn("overflow-hidden group flex h-full flex-col", className)}>
       <CardHeader className="p-0">
         <div className="relative">
           <Cover
@@ -252,10 +252,12 @@ function ShowProductBase({
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-4">
+
+      {/* ทำให้ส่วนเนื้อหายืด เพื่อดันแถวล่างลงไป */}
+      <CardContent className="pt-4 flex-1 flex flex-col">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="font-semibold leading-tight line-clamp-2">
+            <h3 className="font-semibold leading-tight line-clamp-2 min-h-[2.5rem]">
               {product.product_name}
             </h3>
             {product.description && (
@@ -270,11 +272,14 @@ function ShowProductBase({
             </Button>
           )}
         </div>
-        <div className="mt-3 flex items-center justify-between">
+
+        {/* ใช้ mt-auto เพื่อดันบล็อกนี้ไปชิดล่างของ CardContent */}
+        <div className="mt-auto flex items-center justify-between pt-3">
           <Stars rating={product.rating ?? 0} />
           <div className="text-base font-bold">{priceText}</div>
         </div>
       </CardContent>
+
       <CardFooter className="pt-0">
         <Button
           className="w-full"

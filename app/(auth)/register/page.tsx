@@ -7,7 +7,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { User, Lock, Check, Mail, IdCard, Phone, Eye, EyeOff } from "lucide-react";
+import { User, Lock, Check, Mail, IdCard, Phone, Eye, EyeOff, LogIn, UserPlus, Home } from "lucide-react";
 import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import "sweetalert2/dist/sweetalert2.min.css";
@@ -63,10 +63,10 @@ export default function Register() {
   // ✅ handler เฉพาะ field ตัวเลข (รับ maxLen)
   const setDigits =
     (name: keyof FormState, maxLen?: number) =>
-    (e: React.ChangeEvent<HTMLInputElement>) => {
-      const digits = onlyDigits(e.target.value).slice(0, maxLen ?? 99);
-      setForm((prev) => ({ ...prev, [name]: digits }));
-    };
+      (e: React.ChangeEvent<HTMLInputElement>) => {
+        const digits = onlyDigits(e.target.value).slice(0, maxLen ?? 99);
+        setForm((prev) => ({ ...prev, [name]: digits }));
+      };
 
   // ✅ กัน key ที่ไม่ใช่ตัวเลขระหว่างพิมพ์ (ยังวาง paste ได้แต่เราตัดใน onChange แล้ว)
   const allowDigitKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -178,14 +178,16 @@ export default function Register() {
   return (
     <div className="register section">
       <form onSubmit={handleSubmit}>
+        {/* ปุ่มกลับหน้าแรก */}
         <Link href="/" className="inline-block">
           <Button
             type="button"
-            className="m-5 cursor-pointer p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white"
+            className="m-5 cursor-pointer p-6 bg-[#344CB7] text-white flex items-center gap-2 transition-all duration-150 hover:bg-[#000957] hover:text-white"
           >
-            หน้าแรก
+            <Home className="h-5 w-5" /> หน้าแรก
           </Button>
         </Link>
+
 
         {/* อัปโหลดรูปโปรไฟล์ */}
         <div className="register form flex justify-center my-10">
@@ -340,17 +342,22 @@ export default function Register() {
             />
           </div>
 
+          {/* ปุ่ม submit */}
           <Button
             type="submit"
             disabled={submitting}
-            className="cursor-pointer mt-5 w-full p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white disabled:opacity-60"
+            className="cursor-pointer mt-5 w-full p-6 bg-[#344CB7] text-white flex items-center justify-center gap-2 transition-all duration-150 hover:bg-[#000957] hover:text-white disabled:opacity-60"
           >
+            <UserPlus className="h-5 w-5" />
             {submitting ? "กำลังสมัคร..." : "สมัครสมาชิก"}
           </Button>
 
-          <Link className="mt-2 text-center block" href="/login">
-            หากท่านมีบัญชีอยู่แล้ว <u>คลิก!</u>
+
+          {/* ลิงก์ไป login */}
+          <Link className="mt-2 text-center block flex items-center justify-center gap-1" href="/login">
+            หากท่านมีบัญชีอยู่แล้ว <LogIn className="h-4 w-4" /> <u>คลิก!</u>
           </Link>
+
         </div>
       </form>
     </div>

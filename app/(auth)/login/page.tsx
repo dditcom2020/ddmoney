@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { IdCard, Lock, Eye, EyeOff } from "lucide-react";
+import { IdCard, Lock, Eye, EyeOff, Home, LogIn, UserPlus } from "lucide-react";
 import { apiClient } from "@/lib/api/client";
 import {
   buildLoginFormData,
@@ -17,6 +17,7 @@ import Swal from "sweetalert2";
 import withReactContent from "sweetalert2-react-content";
 import "sweetalert2/dist/sweetalert2.min.css";
 import { useRouter } from "next/navigation";
+
 
 type LoginResp = {
   ok?: boolean;
@@ -46,7 +47,7 @@ export default function LoginPage() {
   const [showPwd, setShowPwd] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const router = useRouter();
-  
+
 
   const MySwal = withReactContent(Swal);
 
@@ -80,7 +81,7 @@ export default function LoginPage() {
       });
       return;
     }
-    
+
     setSubmitting(true);
     try {
       const fd = buildLoginFormData(form); // -> personal_id + password
@@ -125,11 +126,12 @@ export default function LoginPage() {
       <Link href="/">
         <Button
           type="button"
-          className="m-5 cursor-pointer p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white"
+          className="m-5 cursor-pointer p-6 bg-[#344CB7] text-white flex items-center gap-2 transition-all duration-150 hover:bg-[#000957] hover:text-white"
         >
-          หน้าแรก
+          <Home className="h-5 w-5" /> หน้าแรก
         </Button>
       </Link>
+
 
       <div className="register form flex justify-center my-10">
         <Image
@@ -190,14 +192,18 @@ export default function LoginPage() {
         <Button
           type="submit"
           disabled={submitting}
-          className="mt-5 w-full p-6 bg-[#344CB7] text-white transition-all duration-150 hover:bg-[#000957] hover:text-white disabled:opacity-60"
+          className="mt-5 w-full p-6 bg-[#344CB7] text-white flex items-center justify-center gap-2 transition-all duration-150 hover:bg-[#000957] hover:text-white disabled:opacity-60"
         >
+          <LogIn className="h-5 w-5" />
           {submitting ? "กำลังเข้าสู่ระบบ..." : "เข้าสู่ระบบ"}
         </Button>
 
-        <Link className="mt-2 text-center" href="/register">
+
+        <Link className="mt-2 text-center flex items-center justify-center gap-1" href="/register">
+          <UserPlus className="h-4 w-4" />
           ยังไม่มีบัญชี? <u>สมัครสมาชิก</u>
         </Link>
+
       </form>
     </div>
   );
