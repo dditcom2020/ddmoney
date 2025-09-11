@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/card";
 
 
-export default function refinance() {
+export default function Refinance() {
   const { data: products, error, isLoading } = useSWR<Product[]>("/api/showproduct", fetcher);
   // ...
   return (
