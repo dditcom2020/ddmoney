@@ -76,12 +76,6 @@ export default function NavbarAdmin({ userName }: NavbarAdminProps) {
               >
                 <Users className="h-4 w-4" /> Users
               </Link>
-              <Link
-                href="/admin/settings"
-                className="flex items-center gap-2 hover:text-[#FFEB00]"
-              >
-                <Settings className="h-4 w-4" /> Settings
-              </Link>
             </nav>
           </div>
 
@@ -113,11 +107,6 @@ export default function NavbarAdmin({ userName }: NavbarAdminProps) {
                   <DropdownMenuItem asChild>
                     <Link href="/admin/users" className="flex items-center gap-2">
                       <Users className="h-4 w-4" /> Users
-                    </Link>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem asChild>
-                    <Link href="/dashboard/settings" className="flex items-center gap-2">
-                      <Settings className="h-4 w-4" /> Settings
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem>

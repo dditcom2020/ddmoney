@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import useSWR, { mutate } from "swr";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Users, Phone, Mail, IdCard } from "lucide-react";
+import { Users, Mail, IdCard } from "lucide-react";
+import Swal from "sweetalert2";
+import { createClient } from "@supabase/supabase-js";
 
 type UserRow = {
   personal_id: string;
@@ -15,17 +17,39 @@ type UserRow = {
   phone: string;
 };
 
+const supabase = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+);
+
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function UserList() {
   const [search, setSearch] = useState("");
   const { data, error, isLoading } = useSWR<{ users: UserRow[] }>(
     `/api/admin/users?search=${encodeURIComponent(search)}`,
-    fetcher
+    fetcher,
+    { refreshInterval: 2000 } // รีเฟรชทุก 2 วินาที
   );
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserRow | null>(null);
+
+  // Supabase Realtime subscription
+  useEffect(() => {
+    const channel = supabase
+      .channel("public:dd_user")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "dd_user" },
+        () => mutate(`/api/admin/users?search=${encodeURIComponent(search)}`)
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [search]);
 
   const handleDelete = async (id: string) => {
     if (!confirm("คุณต้องการลบผู้ใช้นี้หรือไม่?")) return;
@@ -48,18 +72,54 @@ export default function UserList() {
 
   const handleSave = async () => {
     if (!currentUser) return;
+
+    if (
+      !currentUser.firstname?.trim() ||
+      !currentUser.lastname?.trim() ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(currentUser.email) ||
+      currentUser.phone?.length !== 10
+    ) {
+      Swal.fire({
+        icon: "error",
+        title: "ข้อมูลไม่ครบถ้วน",
+        text: "กรุณากรอกข้อมูลให้ครบและถูกต้อง",
+      });
+      return;
+    }
+
     try {
       const res = await fetch(`/api/admin/users/${currentUser.personal_id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(currentUser),
       });
-      if (!res.ok) throw new Error("อัปเดตข้อมูลล้มเหลว");
+      const data = await res.json();
+
+      if (!res.ok) {
+        Swal.fire({
+          icon: "error",
+          title: "เกิดข้อผิดพลาด",
+          text: data.error || "ตรวจสอบข้อมูล และกรุณาลองใหม่อีกครั้ง!",
+        });
+        return;
+      }
+
+      Swal.fire({
+        icon: "success",
+        title: "บันทึกสำเร็จ",
+        showConfirmButton: false,
+        timer: 1500,
+      });
+
       setIsModalOpen(false);
       mutate(`/api/admin/users?search=${encodeURIComponent(search)}`);
     } catch (err) {
       console.error(err);
-      alert("บันทึกข้อมูลล้มเหลว");
+      Swal.fire({
+        icon: "error",
+        title: "เกิดข้อผิดพลาด",
+        text: "บันทึกข้อมูลล้มเหลว กรุณาลองใหม่",
+      });
     }
   };
 
@@ -135,40 +195,58 @@ export default function UserList() {
           </Table>
         </div>
 
-        {/* --- Modal Popup --- */}
         {isModalOpen && currentUser && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white rounded-xl p-6 w-96 space-y-5 shadow-xl animate-fadeIn">
-              <h2 className="text-xl font-semibold border-b pb-2">แก้ไขผู้ใช้</h2>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 animate-fadeIn">
+            <div className="bg-white rounded-2xl p-6 w-96 max-w-full shadow-2xl space-y-5 transform transition-transform duration-300 scale-95 animate-slideIn">
+              <h2 className="text-2xl font-bold text-center text-blue-600 border-b pb-2">แก้ไขผู้ใช้</h2>
 
-              <div className="space-y-3">
-                {["firstname", "lastname", "email", "phone"].map((field) => (
+              <div className="space-y-4">
+                {["firstname", "lastname"].map((field) => (
                   <div key={field}>
                     <label className="block text-sm font-medium capitalize">
-                      {field === "firstname"
-                        ? "ชื่อ"
-                        : field === "lastname"
-                        ? "นามสกุล"
-                        : field === "email"
-                        ? "Email"
-                        : "Phone"}
+                      {field === "firstname" ? "ชื่อ" : "นามสกุล"}
                     </label>
                     <input
-                      type={field === "email" ? "email" : "text"}
+                      type="text"
                       value={currentUser[field as keyof UserRow] || ""}
                       onChange={(e) =>
-                        setCurrentUser({
-                          ...currentUser,
-                          [field]: e.target.value,
-                        })
+                        setCurrentUser({ ...currentUser, [field]: e.target.value })
                       }
-                      className="border border-gray-300 rounded-lg w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                      className={`border rounded-lg w-full px-3 py-2 focus:outline-none focus:ring-2 ${
+                        currentUser[field as keyof UserRow]?.trim() === ""
+                          ? "border-red-500 focus:ring-red-400"
+                          : "border-gray-300 focus:ring-blue-400"
+                      }`}
                     />
                   </div>
                 ))}
+
+                <div>
+                  <label className="block text-sm font-medium">Email</label>
+                  <input
+                    type="email"
+                    value={currentUser.email || ""}
+                    onChange={(e) => setCurrentUser({ ...currentUser, email: e.target.value })}
+                    className="border rounded-lg w-full px-3 py-2 focus:outline-none focus:ring-2 border-gray-300 focus:ring-blue-400"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium">Phone</label>
+                  <input
+                    type="tel"
+                    value={currentUser.phone || ""}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      if (value.length <= 10) setCurrentUser({ ...currentUser, phone: value });
+                    }}
+                    maxLength={10}
+                    className="border rounded-lg w-full px-3 py-2 focus:outline-none focus:ring-2 border-gray-300 focus:ring-blue-400"
+                  />
+                </div>
               </div>
 
-              <div className="flex justify-end gap-3">
+              <div className="flex justify-end gap-3 pt-3 border-t mt-4">
                 <Button
                   variant="ghost"
                   onClick={() => setIsModalOpen(false)}
