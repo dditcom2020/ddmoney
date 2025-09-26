@@ -7,14 +7,12 @@ const supabase = createClient(
 );
 
 // ✅ GET /api/admin/users/[id]
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function GET(req: NextRequest, context: any) {
+  const id = String(context.params.id); // cast เป็น string
   const { data, error } = await supabase
     .from("dd_user")
     .select("personal_id, firstname, lastname, email, phone, role")
-    .eq("personal_id", params.id)
+    .eq("personal_id", id)
     .single();
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
@@ -22,16 +20,14 @@ export async function GET(
 }
 
 // ✅ PUT /api/admin/users/[id]
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function PUT(req: NextRequest, context: any) {
+  const id = String(context.params.id);
   const body = await req.json();
 
   const { data, error } = await supabase
     .from("dd_user")
     .update(body)
-    .eq("personal_id", params.id)
+    .eq("personal_id", id)
     .select()
     .single();
 
@@ -40,14 +36,13 @@ export async function PUT(
 }
 
 // ✅ DELETE /api/admin/users/[id]
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
+export async function DELETE(req: NextRequest, context: any) {
+  const id = String(context.params.id);
+
   const { error } = await supabase
     .from("dd_user")
     .delete()
-    .eq("personal_id", params.id);
+    .eq("personal_id", id);
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 });
   return NextResponse.json({ success: true }, { status: 200 });
