@@ -26,7 +26,7 @@ export async function POST(req: Request) {
     const lastName  = form.get("lastName") == null ? "" : String(form.get("lastName"));
     const password  = String(form.get("password") ?? "");
     const email     = String(form.get("email") ?? "").trim().toLowerCase();
-    const phone     = String(form.get("phone") ?? "");
+    const phone     = String(form.get("phone") ?? ""); // <— เก็บเป็น string
     const file      = form.get("file");
 
     // ดึงเฉพาะตัวเลข; ถ้าไม่มีตัวเลข → ตอบ 400 ชัดเจน (คอลัมน์ใน DB เป็น NOT NULL)
@@ -40,13 +40,13 @@ export async function POST(req: Request) {
     }
 
     const personalIdNum = Number(pidDigits);
-    const phoneNum      = Number(phoneDigits);
+    const phoneStr      = phoneDigits; // <— ใช้ string ตรง ๆ
 
-    // ตรวจซ้ำ (ถ้ามีอะไรมาก็เช็ค)
+    // ตรวจซ้ำ (string สำหรับ phone)
     const { data: dup, error: dupErr } = await supabaseAdmin
       .from("dd_user")
       .select("personal_id, email, phone")
-      .or(`personal_id.eq.${personalIdNum},email.eq.${email},phone.eq.${phoneNum}`)
+      .or(`personal_id.eq.${personalIdNum},email.eq.${email},phone.eq.${phoneStr}`)
       .limit(1)
       .maybeSingle();
 
@@ -62,14 +62,14 @@ export async function POST(req: Request) {
       const fields: string[] = [];
       if (String(dup.personal_id) === String(personalIdNum)) fields.push("citizenId");
       if (String(dup.email).toLowerCase() === email) fields.push("email");
-      if (Number(dup.phone) === phoneNum) fields.push("phone");
+      if (dup.phone === phoneStr) fields.push("phone"); // <— เปรียบเทียบ string
       return NextResponse.json(
         { ok: false, message: "ข้อมูลซ้ำในระบบ", duplicate: fields },
         { status: 409 }
       );
     }
 
-    // อัปโหลดรูป (ถ้ามี) — เก็บ "path" (key) ลงคอลัมน์ images
+    // อัปโหลดรูป (ถ้ามี)
     let imagePath: string | null = null;
     if (file instanceof File) {
       try {
@@ -87,7 +87,7 @@ export async function POST(req: Request) {
         if (upErr) {
           console.error(`[${errorId}] upload error:`, upErr);
         } else {
-          imagePath = key; // <— เก็บเฉพาะ path ใน DB
+          imagePath = key; // เก็บ path
         }
       } catch (uploadErr) {
         console.error(`[${errorId}] upload exception:`, uploadErr);
@@ -100,12 +100,12 @@ export async function POST(req: Request) {
     // insert ให้ตรง schema
     const row = {
       personal_id: personalIdNum,
-      firstname: firstName,
-      password:  passwordHash,
+      firstname:   firstName,
+      password:    passwordHash,
       email,
-      phone:     phoneNum,
-      lastname:  lastName || null,
-      images:    imagePath,
+      phone:       phoneStr, // <— เก็บ string ไม่ตัด 0
+      lastname:    lastName || null,
+      images:      imagePath,
     };
 
     const { error: insertErr } = await supabaseAdmin.from("dd_user").insert(row);
