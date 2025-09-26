@@ -8,11 +8,8 @@ const supabase = createClient(
 );
 
 // GET /api/admin/users/:id
-export async function GET(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function GET(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   if (!id) return NextResponse.json({ error: "Missing user ID" }, { status: 400 });
 
   try {
@@ -25,22 +22,18 @@ export async function GET(
     if (error) return NextResponse.json({ error: error.message }, { status: 404 });
 
     return NextResponse.json(data, { status: 200 });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
 
 // PUT /api/admin/users/:id
-export async function PUT(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function PUT(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   if (!id) return NextResponse.json({ error: "Missing user ID" }, { status: 400 });
 
   try {
-    const body = await req.json();
-    const { firstname, lastname, email, phone } = body;
+    const { firstname, lastname, email, phone } = await req.json();
 
     if (!firstname?.trim() || !lastname?.trim() || !email?.trim() || !phone?.trim()) {
       return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบ" }, { status: 400 });
@@ -77,17 +70,14 @@ export async function PUT(
     if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
     return NextResponse.json({ message: "อัปเดตสำเร็จ", user: updatedUser }, { status: 200 });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
 
 // DELETE /api/admin/users/:id
-export async function DELETE(
-  req: NextRequest,
-  { params }: { params: { id: string } }
-) {
-  const { id } = params;
+export async function DELETE(req: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   if (!id) return NextResponse.json({ error: "Missing user ID" }, { status: 400 });
 
   try {
@@ -95,7 +85,7 @@ export async function DELETE(
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
     return NextResponse.json({ message: "ลบผู้ใช้สำเร็จ" }, { status: 200 });
-  } catch (err) {
+  } catch {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
