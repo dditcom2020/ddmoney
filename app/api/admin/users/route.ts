@@ -1,8 +1,8 @@
 // app/api/admin/users/route.ts
 import { NextResponse } from "next/server";
-import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { createClient } from "@supabase/supabase-js";
 
-const supabase: SupabaseClient = createClient(
+const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
@@ -42,16 +42,10 @@ export async function PUT(
 ) {
   try {
     const id = params.id;
-    const body: {
-      firstname: string;
-      lastname: string;
-      email: string;
-      phone: string;
-    } = await req.json();
-
+    const body = await req.json();
     const { firstname, lastname, email, phone } = body;
 
-    if (!firstname.trim() || !lastname.trim() || !email.trim() || !phone.trim()) {
+    if (!firstname?.trim() || !lastname?.trim() || !email?.trim() || !phone?.trim()) {
       return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบ" }, { status: 400 });
     }
 
