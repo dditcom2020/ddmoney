@@ -1,4 +1,3 @@
-// app/client/register/page.tsx
 "use client";
 
 import { useState, useEffect } from "react";
@@ -14,13 +13,13 @@ import "sweetalert2/dist/sweetalert2.min.css";
 import { apiClient } from "@/lib/api/client";
 
 type FormState = {
-  citizenId: string;  // personal_id
-  firstName: string;  // firstname
-  lastName: string;   // lastname
-  password: string;   // จะ hash ฝั่ง server
-  confirm: string;    // เทียบกับ password ที่ client
-  email: string;      // email
-  phone: string;      // phone
+  citizenId: string;
+  firstName: string;
+  lastName: string;
+  password: string;
+  confirm: string;
+  email: string;
+  phone: string;
 };
 
 type ApiResp = {
@@ -34,7 +33,6 @@ function getErrorMessage(err: unknown): string {
   try { return JSON.stringify(err); } catch { return String(err); }
 }
 
-// ✅ helper: คงไว้เฉพาะตัวเลข
 const onlyDigits = (s: string) => s.replace(/\D/g, "");
 
 export default function Register() {
@@ -45,11 +43,9 @@ export default function Register() {
   const [showPwd2, setShowPwd2] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
-  // รูปโปรไฟล์
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
 
-  // ฟอร์ม
   const [form, setForm] = useState<FormState>({
     citizenId: "",
     firstName: "",
@@ -60,7 +56,22 @@ export default function Register() {
     phone: "",
   });
 
-  // ✅ handler เฉพาะ field ตัวเลข (รับ maxLen)
+  // SweetAlert แจ้งเตือนเรื่องบัตรประชาชนตอนเข้าหน้า
+  useEffect(() => {
+    MySwal.fire({
+      icon: "warning",
+      title: "ข้อควรระวัง",
+      html: `
+        ห้ามนำบัตรประชาชนของผู้อื่น<br/>
+        และการปลอมแปลงบัตรประชาชน<br/>
+        จะถูกดำเนินการตามกฎหมาย
+      `,
+      confirmButtonText: "ตกลง, เข้าใจแล้ว",
+      allowOutsideClick: false,
+      allowEscapeKey: false,
+    });
+  }, []);
+
   const setDigits =
     (name: keyof FormState, maxLen?: number) =>
       (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -68,14 +79,12 @@ export default function Register() {
         setForm((prev) => ({ ...prev, [name]: digits }));
       };
 
-  // ✅ กัน key ที่ไม่ใช่ตัวเลขระหว่างพิมพ์ (ยังวาง paste ได้แต่เราตัดใน onChange แล้ว)
   const allowDigitKeys = (e: React.KeyboardEvent<HTMLInputElement>) => {
     const allow = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab", "Home", "End"];
     if (allow.includes(e.key)) return;
     if (!/^[0-9]$/.test(e.key)) e.preventDefault();
   };
 
-  // preview รูป
   useEffect(() => {
     if (!file) {
       setPreview(null);
@@ -86,13 +95,11 @@ export default function Register() {
     return () => URL.revokeObjectURL(url);
   }, [file]);
 
-  // เปลี่ยนค่า input ทั่วไป
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
   };
 
-  // (ทางเลือก) เช็กไฟล์เบื้องต้นก่อนส่งเล็กน้อย
   const validateFile = (f: File | null): string | null => {
     if (!f) return null;
     const maxMB = 5;
@@ -105,7 +112,6 @@ export default function Register() {
     e.preventDefault();
     if (submitting) return;
 
-    // ✅ ต้องมีอย่างน้อย 8 ตัวอักษร
     if (!form.password || form.password.length < 8) {
       await MySwal.fire({
         icon: "warning",
@@ -116,7 +122,6 @@ export default function Register() {
       return;
     }
 
-    // อย่างน้อยให้ผู้ใช้ทราบถ้ารหัสผ่านไม่ตรงกัน
     if (form.password !== form.confirm) {
       await MySwal.fire({
         icon: "warning",
@@ -140,7 +145,6 @@ export default function Register() {
 
     setSubmitting(true);
     try {
-      // ส่งคีย์ให้ตรงกับ /api/register
       const f = new FormData();
       f.append("citizenId", form.citizenId ?? "");
       f.append("firstName", form.firstName ?? "");
@@ -152,7 +156,7 @@ export default function Register() {
 
       const data = await apiClient<ApiResp>("/api/register", {
         method: "POST",
-        body: f, // ปล่อยให้ browser ใส่ Content-Type boundary เอง
+        body: f,
       });
 
       await MySwal.fire({
@@ -178,7 +182,6 @@ export default function Register() {
   return (
     <div className="register section">
       <form onSubmit={handleSubmit}>
-        {/* ปุ่มกลับหน้าแรก */}
         <Link href="/" className="inline-block">
           <Button
             type="button"
@@ -188,8 +191,6 @@ export default function Register() {
           </Button>
         </Link>
 
-
-        {/* อัปโหลดรูปโปรไฟล์ */}
         <div className="register form flex justify-center my-10">
           <label className="rounded-[100%] cursor-pointer" htmlFor="uploadImage">
             <div className="relative w-[250px] h-[250px] rounded-full overflow-hidden">
@@ -212,9 +213,8 @@ export default function Register() {
           />
         </div>
 
-        {/* ฟอร์มกรอกข้อมูล */}
         <div className="form-group my-10 w-full max-w-md mx-auto px-4 flex flex-col items-stretch justify-center">
-          {/* Citizen ID (personal_id) — เฉพาะตัวเลข 13 หลัก */}
+          {/* Citizen ID */}
           <div className="relative w-full">
             <IdCard className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -233,7 +233,7 @@ export default function Register() {
             />
           </div>
 
-          {/* First Name (firstname) */}
+          {/* First Name */}
           <div className="relative w-full">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -247,7 +247,7 @@ export default function Register() {
             />
           </div>
 
-          {/* Last Name (lastname) — ไม่บังคับ */}
+          {/* Last Name */}
           <div className="relative w-full">
             <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -323,7 +323,7 @@ export default function Register() {
             />
           </div>
 
-          {/* Phone — เฉพาะตัวเลข 10 หลัก (ปรับได้) */}
+          {/* Phone */}
           <div className="relative w-full">
             <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
             <Input
@@ -342,7 +342,6 @@ export default function Register() {
             />
           </div>
 
-          {/* ปุ่ม submit */}
           <Button
             type="submit"
             disabled={submitting}
@@ -352,12 +351,9 @@ export default function Register() {
             {submitting ? "กำลังสมัคร..." : "สมัครสมาชิก"}
           </Button>
 
-
-          {/* ลิงก์ไป login */}
           <Link className="mt-2 text-center block flex items-center justify-center gap-1" href="/login">
             หากท่านมีบัญชีอยู่แล้ว <LogIn className="h-4 w-4" /> <u>คลิก!</u>
           </Link>
-
         </div>
       </form>
     </div>
