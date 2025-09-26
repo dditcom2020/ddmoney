@@ -1,3 +1,4 @@
+// app/api/admin/users/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
@@ -6,53 +7,78 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-// ✅ GET /api/admin/users/[id]
-export async function GET(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> } // <-- ใช้ Promise ตามที่ Next.js ต้องการ
-) {
-  const { id } = await context.params; // ต้อง await เพื่อเอา id
-  const { data, error } = await supabase
-    .from("dd_user")
-    .select("personal_id, firstname, lastname, email, phone, role")
-    .eq("personal_id", id)
-    .single();
+// GET /api/admin/users/:id
+export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { id } = params;
+    const { data, error } = await supabase
+      .from("dd_user")
+      .select("personal_id, firstname, lastname, email, phone, role")
+      .eq("personal_id", id)
+      .single();
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data, { status: 200 });
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json(data, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+  }
 }
 
-// ✅ PUT /api/admin/users/[id]
-export async function PUT(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params;
-  const body = await req.json();
+// PUT /api/admin/users/:id
+export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { id } = params;
+    const { firstname, lastname, email, phone } = await req.json();
 
-  const { data, error } = await supabase
-    .from("dd_user")
-    .update(body)
-    .eq("personal_id", id)
-    .select()
-    .single();
+    if (!firstname?.trim() || !lastname?.trim() || !email?.trim() || !phone?.trim()) {
+      return NextResponse.json({ error: "กรุณากรอกข้อมูลให้ครบ" }, { status: 400 });
+    }
 
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json(data, { status: 200 });
+    // ตรวจสอบ email ซ้ำ
+    const { data: emailData } = await supabase
+      .from("dd_user")
+      .select("personal_id")
+      .eq("email", email)
+      .neq("personal_id", id);
+    if (emailData && emailData.length > 0) {
+      return NextResponse.json({ error: "มีผู้ใช้งานอีเมล์นี้แล้ว" }, { status: 400 });
+    }
+
+    // ตรวจสอบ phone ซ้ำ
+    const { data: phoneData } = await supabase
+      .from("dd_user")
+      .select("personal_id")
+      .eq("phone", phone)
+      .neq("personal_id", id);
+    if (phoneData && phoneData.length > 0) {
+      return NextResponse.json({ error: "มีผู้ใช้งานเบอร์โทรนี้แล้ว" }, { status: 400 });
+    }
+
+    // อัปเดตข้อมูล
+    const { data, error } = await supabase
+      .from("dd_user")
+      .update({ firstname, lastname, email, phone })
+      .eq("personal_id", id)
+      .select()
+      .single();
+
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
+    return NextResponse.json({ message: "อัปเดตสำเร็จ", user: data }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+  }
 }
 
-// ✅ DELETE /api/admin/users/[id]
-export async function DELETE(
-  req: NextRequest,
-  context: { params: Promise<{ id: string }> }
-) {
-  const { id } = await context.params;
+// DELETE /api/admin/users/:id
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+  try {
+    const { id } = params;
+    const { error } = await supabase.from("dd_user").delete().eq("personal_id", id);
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
-  const { error } = await supabase
-    .from("dd_user")
-    .delete()
-    .eq("personal_id", id);
-
-  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
-  return NextResponse.json({ success: true }, { status: 200 });
+    return NextResponse.json({ message: "ลบผู้ใช้สำเร็จ" }, { status: 200 });
+  } catch (err) {
+    return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
+  }
 }
