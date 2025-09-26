@@ -1,14 +1,16 @@
-// app/api/admin/users/[id]/route.ts
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY! // server only
+  process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
 // ✅ GET /api/admin/users/[id]
-export async function GET(_: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const { data, error } = await supabase
     .from("dd_user")
     .select("personal_id, firstname, lastname, email, phone, role")
@@ -20,7 +22,10 @@ export async function GET(_: Request, { params }: { params: { id: string } }) {
 }
 
 // ✅ PUT /api/admin/users/[id]
-export async function PUT(req: Request, { params }: { params: { id: string } }) {
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const body = await req.json();
 
   const { data, error } = await supabase
@@ -35,7 +40,10 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 }
 
 // ✅ DELETE /api/admin/users/[id]
-export async function DELETE(_: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
   const { error } = await supabase
     .from("dd_user")
     .delete()
