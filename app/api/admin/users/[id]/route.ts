@@ -7,10 +7,17 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+// helper: get id from params
+async function getId(params: any) {
+  if (params?.id?.then) return await params.id; // handle Promise<{id: string}>
+  return params.id;
+}
+
 // GET /api/admin/users/:id
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
+export async function GET(req: NextRequest, context: { params: any }) {
   try {
-    const { id } = params;
+    const id = await getId(context.params);
+
     const { data, error } = await supabase
       .from("dd_user")
       .select("personal_id, firstname, lastname, email, phone, role")
@@ -25,9 +32,9 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 }
 
 // PUT /api/admin/users/:id
-export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
+export async function PUT(req: NextRequest, context: { params: any }) {
   try {
-    const { id } = params;
+    const id = await getId(context.params);
     const { firstname, lastname, email, phone } = await req.json();
 
     if (!firstname?.trim() || !lastname?.trim() || !email?.trim() || !phone?.trim()) {
@@ -71,12 +78,12 @@ export async function PUT(req: NextRequest, { params }: { params: { id: string }
 }
 
 // DELETE /api/admin/users/:id
-export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+export async function DELETE(req: NextRequest, context: { params: any }) {
   try {
-    const { id } = params;
+    const id = await getId(context.params);
     const { error } = await supabase.from("dd_user").delete().eq("personal_id", id);
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
     return NextResponse.json({ message: "ลบผู้ใช้สำเร็จ" }, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
