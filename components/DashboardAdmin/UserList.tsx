@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import useSWR, { mutate } from "swr";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
@@ -24,18 +24,15 @@ export default function UserList() {
     fetcher
   );
 
-  // --- Modal State ---
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentUser, setCurrentUser] = useState<UserRow | null>(null);
 
-  // --- ฟังก์ชันลบ ---
   const handleDelete = async (id: string) => {
     if (!confirm("คุณต้องการลบผู้ใช้นี้หรือไม่?")) return;
     await fetch(`/api/admin/users/${id}`, { method: "DELETE" });
     mutate(`/api/admin/users?search=${encodeURIComponent(search)}`);
   };
 
-  // --- เปิด modal และโหลดข้อมูลผู้ใช้ ---
   const handleViewEdit = async (id: string) => {
     try {
       const res = await fetch(`/api/admin/users/${id}`);
@@ -49,7 +46,6 @@ export default function UserList() {
     }
   };
 
-  // --- บันทึกข้อมูลจาก modal ---
   const handleSave = async () => {
     if (!currentUser) return;
     try {
@@ -68,68 +64,69 @@ export default function UserList() {
   };
 
   return (
-    <Card>
+    <Card className="shadow-lg border border-gray-200">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Users className="h-5 w-5 text-[#FFEB00]" />
+        <CardTitle className="flex items-center gap-2 text-xl font-bold">
+          <Users className="h-6 w-6 text-yellow-500" />
           รายชื่อสมาชิก (เฉพาะผู้ใช้)
         </CardTitle>
       </CardHeader>
-      <CardContent className="space-y-4">
-        {error && <div className="text-red-600">โหลดข้อมูลไม่สำเร็จ</div>}
-        {isLoading && <div>กำลังโหลด...</div>}
 
-        {/* --- Mobile & Desktop --- */}
+      <CardContent className="space-y-4">
+        {error && <div className="text-red-600 font-semibold">โหลดข้อมูลไม่สำเร็จ</div>}
+        {isLoading && <div className="text-gray-500">กำลังโหลด...</div>}
+
+        <div className="flex justify-between mb-3">
+          <input
+            type="text"
+            placeholder="ค้นหาสมาชิก..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="border border-gray-300 rounded-lg px-4 py-2 w-72 focus:outline-none focus:ring-2 focus:ring-blue-400"
+          />
+        </div>
+
         <div className="overflow-x-auto">
-          <div className="flex justify-between mb-3">
-            <input
-              type="text"
-              placeholder="ค้นหาสมาชิก..."
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              className="border rounded px-3 py-1 w-60"
-            />
-          </div>
-          <Table className="min-w-[800px]">
-            <TableHeader className="bg-slate-50 sticky top-0 z-10">
+          <Table className="min-w-[900px] border border-gray-200 rounded-lg overflow-hidden">
+            <TableHeader className="bg-gray-50 sticky top-0 z-10">
               <TableRow>
-                <TableHead>รหัสบัตร</TableHead>
-                <TableHead>ชื่อ</TableHead>
-                <TableHead>นามสกุล</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>เบอร์โทร</TableHead>
+                <TableHead className="text-left">รหัสบัตร</TableHead>
+                <TableHead className="text-left">ชื่อ</TableHead>
+                <TableHead className="text-left">นามสกุล</TableHead>
+                <TableHead className="text-left">Email</TableHead>
+                <TableHead className="text-left">เบอร์โทร</TableHead>
                 <TableHead className="text-right">การจัดการ</TableHead>
               </TableRow>
             </TableHeader>
+
             <TableBody>
               {data?.users?.map((u) => (
-                <TableRow key={u.personal_id} className="hover:bg-slate-50">
+                <TableRow
+                  key={u.personal_id}
+                  className="hover:bg-blue-50 transition-colors duration-200"
+                >
                   <TableCell>{u.personal_id}</TableCell>
                   <TableCell>{u.firstname}</TableCell>
                   <TableCell>{u.lastname}</TableCell>
                   <TableCell>{u.email}</TableCell>
                   <TableCell>{u.phone}</TableCell>
                   <TableCell className="text-right flex gap-2 justify-end">
-                    {/* ปุ่มดู/แก้ไข */}
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleViewEdit(u.personal_id)}
                       className="border-blue-500 text-blue-600 hover:bg-blue-50 flex items-center gap-1"
                     >
-                      <IdCard className="h-3 w-3" />
-                      ดู / แก้ไข
+                      <IdCard className="h-3 w-3" /> ดู / แก้ไข
                     </Button>
 
-                    {/* ปุ่มลบ */}
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => handleDelete(u.personal_id)}
                       className="border-red-500 text-red-600 hover:bg-red-50 flex items-center gap-1"
                     >
-                      <Mail className="h-3 w-3" />
-                      ลบ
+                      <Mail className="h-3 w-3" /> ลบ
                     </Button>
                   </TableCell>
                 </TableRow>
@@ -141,70 +138,47 @@ export default function UserList() {
         {/* --- Modal Popup --- */}
         {isModalOpen && currentUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-white rounded-lg p-6 w-96 space-y-4 shadow-lg">
-              <h2 className="text-lg font-semibold">แก้ไขผู้ใช้</h2>
+            <div className="bg-white rounded-xl p-6 w-96 space-y-5 shadow-xl animate-fadeIn">
+              <h2 className="text-xl font-semibold border-b pb-2">แก้ไขผู้ใช้</h2>
 
-              <div className="space-y-2">
-                <div>
-                  <label className="block text-sm">ชื่อ</label>
-                  <input
-                    type="text"
-                    value={currentUser.firstname}
-                    onChange={(e) =>
-                      setCurrentUser({ ...currentUser, firstname: e.target.value })
-                    }
-                    className="border rounded w-full px-2 py-1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm">นามสกุล</label>
-                  <input
-                    type="text"
-                    value={currentUser.lastname || ""}
-                    onChange={(e) =>
-                      setCurrentUser({ ...currentUser, lastname: e.target.value })
-                    }
-                    className="border rounded w-full px-2 py-1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm">Email</label>
-                  <input
-                    type="email"
-                    value={currentUser.email}
-                    onChange={(e) =>
-                      setCurrentUser({ ...currentUser, email: e.target.value })
-                    }
-                    className="border rounded w-full px-2 py-1"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm">Phone</label>
-                  <input
-                    type="text"
-                    value={currentUser.phone}
-                    onChange={(e) =>
-                      setCurrentUser({ ...currentUser, phone: e.target.value })
-                    }
-                    className="border rounded w-full px-2 py-1"
-                  />
-                </div>
+              <div className="space-y-3">
+                {["firstname", "lastname", "email", "phone"].map((field) => (
+                  <div key={field}>
+                    <label className="block text-sm font-medium capitalize">
+                      {field === "firstname"
+                        ? "ชื่อ"
+                        : field === "lastname"
+                        ? "นามสกุล"
+                        : field === "email"
+                        ? "Email"
+                        : "Phone"}
+                    </label>
+                    <input
+                      type={field === "email" ? "email" : "text"}
+                      value={currentUser[field as keyof UserRow] || ""}
+                      onChange={(e) =>
+                        setCurrentUser({
+                          ...currentUser,
+                          [field]: e.target.value,
+                        })
+                      }
+                      className="border border-gray-300 rounded-lg w-full px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-400"
+                    />
+                  </div>
+                ))}
               </div>
 
-              <div className="flex justify-end gap-2">
+              <div className="flex justify-end gap-3">
                 <Button
                   variant="ghost"
                   onClick={() => setIsModalOpen(false)}
-                  className="border px-3 py-1"
+                  className="border px-4 py-2 hover:bg-gray-100"
                 >
                   ยกเลิก
                 </Button>
                 <Button
                   onClick={handleSave}
-                  className="bg-blue-600 text-white px-3 py-1 hover:bg-blue-700"
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700"
                 >
                   บันทึก
                 </Button>

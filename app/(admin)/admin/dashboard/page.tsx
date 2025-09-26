@@ -2,7 +2,8 @@
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/server";
 import NavbarAdmin from "@/components/NavbarAdmin";
-import MembersTotal from "@/components/DashboardAdmin/MemberTotal"; // ✅ การ์ดยอดรวมสมาชิก
+import MembersTotal from "@/components/DashboardAdmin/MemberTotal";
+import OnlineTotal from "@/components/DashboardAdmin/OnlineTotal"; // ✅ เพิ่มเข้ามา
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -26,7 +27,8 @@ export default async function DashboardPage() {
         </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <MembersTotal />          {/* การ์ดยอดรวมสมาชิก (role=user จาก dd_user) */}
+          <MembersTotal />   {/* การ์ดยอดรวมสมาชิก */}
+          <OnlineTotal />    {/* ✅ การ์ดผู้ใช้งานออนไลน์ */}
         </div>
       </main>
     </>

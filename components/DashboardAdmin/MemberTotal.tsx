@@ -1,4 +1,3 @@
-// components/DashboardAdmin/MembersTotal.tsx
 "use client";
 
 import useSWR from "swr";
@@ -15,24 +14,28 @@ export default function MembersTotal() {
   );
 
   return (
-    <Card className="border-[#FFEB00]/40">
-      <CardHeader className="pb-2 flex flex-row items-center justify-between">
+    <Card className="relative overflow-hidden rounded-xl shadow-lg bg-gradient-to-r from-yellow-400 to-yellow-500 text-white">
+      {/* ไอคอนพื้นหลังโปร่ง */}
+      <UsersRound className="absolute -top-5 -right-5 h-24 w-24 opacity-20" />
+
+      <CardHeader className="pb-2 flex flex-row items-center justify-between z-10 relative">
         <CardTitle className="text-base flex items-center gap-2">
-          <UsersRound className="h-5 w-5 text-[#FFEB00]" />
+          <UsersRound className="h-5 w-5 text-white" />
           สมาชิกทั้งหมด
         </CardTitle>
-        <Badge variant="secondary">รวม</Badge>
+        <Badge variant="secondary" className="bg-white/20 text-white">รวม</Badge>
       </CardHeader>
-      <CardContent className="pt-0">
+
+      <CardContent className="pt-0 z-10 relative">
         {error ? (
-          <div className="text-sm text-red-600">ดึงข้อมูลไม่สำเร็จ</div>
+          <div className="text-sm text-red-200">ดึงข้อมูลไม่สำเร็จ</div>
         ) : (
-          <div className="text-4xl font-bold leading-tight">
+          <div className="text-4xl font-bold leading-tight text-white">
             {isLoading ? "…" : data?.total ?? 0}
           </div>
         )}
-        <p className="text-sm text-muted-foreground">
-          จำนวนผู้สมัครสมาชิกทั้งหมด (role = &duotuser&duot)
+        <p className="text-sm text-white/80 mt-1">
+          จำนวนผู้สมัครสมาชิกทั้งหมด (role = user)
         </p>
       </CardContent>
     </Card>
