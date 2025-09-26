@@ -32,7 +32,7 @@ export default function MembersTotal() {
           </div>
         )}
         <p className="text-sm text-muted-foreground">
-          จำนวนผู้สมัครสมาชิกทั้งหมด (role = "user")
+          จำนวนผู้สมัครสมาชิกทั้งหมด (role = &duotuser&duot)
         </p>
       </CardContent>
     </Card>
