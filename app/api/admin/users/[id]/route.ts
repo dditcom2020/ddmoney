@@ -6,15 +6,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-interface Params {
-  params: {
-    id: string;
-  };
-}
-
 // ✅ GET /api/admin/users/[id]
-export async function GET(req: NextRequest, { params }: Params) {
-  const { id } = params;
+export async function GET(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> } // <-- ใช้ Promise ตามที่ Next.js ต้องการ
+) {
+  const { id } = await context.params; // ต้อง await เพื่อเอา id
   const { data, error } = await supabase
     .from("dd_user")
     .select("personal_id, firstname, lastname, email, phone, role")
@@ -26,8 +23,11 @@ export async function GET(req: NextRequest, { params }: Params) {
 }
 
 // ✅ PUT /api/admin/users/[id]
-export async function PUT(req: NextRequest, { params }: Params) {
-  const { id } = params;
+export async function PUT(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
   const body = await req.json();
 
   const { data, error } = await supabase
@@ -42,8 +42,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
 }
 
 // ✅ DELETE /api/admin/users/[id]
-export async function DELETE(req: NextRequest, { params }: Params) {
-  const { id } = params;
+export async function DELETE(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+) {
+  const { id } = await context.params;
 
   const { error } = await supabase
     .from("dd_user")
