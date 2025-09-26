@@ -2,7 +2,7 @@
 import { redirect } from "next/navigation";
 import { requireRole } from "@/lib/auth/server";
 import NavbarAdmin from "@/components/NavbarAdmin";
-import MembersTotal from "@/components/DashboardAdmin/MemberTotal"; // ✅ การ์ดยอดรวมสมาชิก
+import UserList from "@/components/DashboardAdmin/UserList"; // ✅ เพิ่ม
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -25,9 +25,8 @@ export default async function DashboardPage() {
           แดชบอร์ดผู้ดูแลระบบ (Admin) {user.firstname ?? ""}
         </h1>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <MembersTotal />          {/* การ์ดยอดรวมสมาชิก (role=user จาก dd_user) */}
-        </div>
+        {/* ✅ ตารางรายชื่อสมาชิก */}
+        <UserList />
       </main>
     </>
   );
