@@ -7,39 +7,23 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
-interface User {
-  personal_id: string;
-  firstname: string;
-  lastname: string;
-  email: string;
-  phone: string;
-  role: string;
-}
-
-interface Params {
-  id: string;
-}
-
-// helper: get id from params
-async function getId(params: Record<string, string | string[]> | Promise<Record<string, string | string[]>>): Promise<string> {
-  const resolved = params instanceof Promise ? await params : params;
-  const id = resolved.id;
-  if (Array.isArray(id)) return id[0]; // handle array if route contains multiple segments
-  return id;
-}
-
 // GET /api/admin/users/:id
-export async function GET(req: NextRequest, context: { params: Record<string, string | string[]> }) {
-  try {
-    const id = await getId(context.params);
+export async function GET(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+  if (!id) return NextResponse.json({ error: "Missing user ID" }, { status: 400 });
 
+  try {
     const { data, error } = await supabase
-      .from<User>("dd_user")
+      .from("dd_user")
       .select("personal_id, firstname, lastname, email, phone, role")
       .eq("personal_id", id)
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) return NextResponse.json({ error: error.message }, { status: 404 });
+
     return NextResponse.json(data, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
@@ -47,11 +31,15 @@ export async function GET(req: NextRequest, context: { params: Record<string, st
 }
 
 // PUT /api/admin/users/:id
-export async function PUT(req: NextRequest, context: { params: Record<string, string | string[]> }) {
-  try {
-    const id = await getId(context.params);
-    const body = await req.json() as Partial<User>;
+export async function PUT(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+  if (!id) return NextResponse.json({ error: "Missing user ID" }, { status: 400 });
 
+  try {
+    const body = await req.json();
     const { firstname, lastname, email, phone } = body;
 
     if (!firstname?.trim() || !lastname?.trim() || !email?.trim() || !phone?.trim()) {
@@ -59,48 +47,53 @@ export async function PUT(req: NextRequest, context: { params: Record<string, st
     }
 
     // ตรวจสอบ email ซ้ำ
-    const { data: emailData } = await supabase
-      .from<User>("dd_user")
+    const { data: emailData, error: emailError } = await supabase
+      .from("dd_user")
       .select("personal_id")
       .eq("email", email)
       .neq("personal_id", id);
-    if (emailData && emailData.length > 0) {
-      return NextResponse.json({ error: "มีผู้ใช้งานอีเมล์นี้แล้ว" }, { status: 400 });
-    }
+
+    if (emailError) return NextResponse.json({ error: emailError.message }, { status: 500 });
+    if (emailData?.length) return NextResponse.json({ error: "มีผู้ใช้งานอีเมล์นี้แล้ว" }, { status: 400 });
 
     // ตรวจสอบ phone ซ้ำ
-    const { data: phoneData } = await supabase
-      .from<User>("dd_user")
+    const { data: phoneData, error: phoneError } = await supabase
+      .from("dd_user")
       .select("personal_id")
       .eq("phone", phone)
       .neq("personal_id", id);
-    if (phoneData && phoneData.length > 0) {
-      return NextResponse.json({ error: "มีผู้ใช้งานเบอร์โทรนี้แล้ว" }, { status: 400 });
-    }
+
+    if (phoneError) return NextResponse.json({ error: phoneError.message }, { status: 500 });
+    if (phoneData?.length) return NextResponse.json({ error: "มีผู้ใช้งานเบอร์โทรนี้แล้ว" }, { status: 400 });
 
     // อัปเดตข้อมูล
-    const { data, error } = await supabase
-      .from<User>("dd_user")
+    const { data: updatedUser, error: updateError } = await supabase
+      .from("dd_user")
       .update({ firstname, lastname, email, phone })
       .eq("personal_id", id)
       .select()
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (updateError) return NextResponse.json({ error: updateError.message }, { status: 500 });
 
-    return NextResponse.json({ message: "อัปเดตสำเร็จ", user: data }, { status: 200 });
+    return NextResponse.json({ message: "อัปเดตสำเร็จ", user: updatedUser }, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
   }
 }
 
 // DELETE /api/admin/users/:id
-export async function DELETE(req: NextRequest, context: { params: Record<string, string | string[]> }) {
-  try {
-    const id = await getId(context.params);
-    const { error } = await supabase.from<User>("dd_user").delete().eq("personal_id", id);
+export async function DELETE(
+  req: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  const { id } = params;
+  if (!id) return NextResponse.json({ error: "Missing user ID" }, { status: 400 });
 
+  try {
+    const { error } = await supabase.from("dd_user").delete().eq("personal_id", id);
     if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+
     return NextResponse.json({ message: "ลบผู้ใช้สำเร็จ" }, { status: 200 });
   } catch (err) {
     return NextResponse.json({ error: "Unexpected error" }, { status: 500 });
