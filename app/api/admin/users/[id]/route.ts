@@ -6,9 +6,15 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
 
+interface Params {
+  params: {
+    id: string;
+  };
+}
+
 // ✅ GET /api/admin/users/[id]
-export async function GET(req: NextRequest, context: any) {
-  const id = String(context.params.id); // cast เป็น string
+export async function GET(req: NextRequest, { params }: Params) {
+  const { id } = params;
   const { data, error } = await supabase
     .from("dd_user")
     .select("personal_id, firstname, lastname, email, phone, role")
@@ -20,8 +26,8 @@ export async function GET(req: NextRequest, context: any) {
 }
 
 // ✅ PUT /api/admin/users/[id]
-export async function PUT(req: NextRequest, context: any) {
-  const id = String(context.params.id);
+export async function PUT(req: NextRequest, { params }: Params) {
+  const { id } = params;
   const body = await req.json();
 
   const { data, error } = await supabase
@@ -36,8 +42,8 @@ export async function PUT(req: NextRequest, context: any) {
 }
 
 // ✅ DELETE /api/admin/users/[id]
-export async function DELETE(req: NextRequest, context: any) {
-  const id = String(context.params.id);
+export async function DELETE(req: NextRequest, { params }: Params) {
+  const { id } = params;
 
   const { error } = await supabase
     .from("dd_user")
