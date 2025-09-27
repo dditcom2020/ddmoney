@@ -132,6 +132,16 @@ export default function Register() {
       return;
     }
 
+    if (form.phone.length !== 10) {
+      await MySwal.fire({
+        icon: "warning",
+        title: "เบอร์โทรไม่ถูกต้อง",
+        text: "กรุณากรอกเบอร์โทรศัพท์ให้ครบ 10 หลัก",
+        confirmButtonText: "ตกลง",
+      });
+      return;
+    }
+
     const fileErr = validateFile(file);
     if (fileErr) {
       await MySwal.fire({
@@ -332,7 +342,7 @@ export default function Register() {
               onChange={setDigits("phone", 10)}
               onKeyDown={allowDigitKeys}
               inputMode="tel"
-              pattern="\d*"
+              pattern="\d{10}$" //{10}$
               maxLength={10}
               className="w-full my-2 h-11 pl-9 pr-4 focus-visible:ring-2 focus-visible:ring-[#344CB7] focus:border-[#344CB7]"
               placeholder="เบอร์โทรศัพท์"
