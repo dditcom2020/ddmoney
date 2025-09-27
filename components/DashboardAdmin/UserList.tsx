@@ -5,7 +5,7 @@ import useSWR, { mutate } from "swr";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Users, Mail, IdCard } from "lucide-react";
+import { Users, Mail, IdCard, Eye, Trash2 } from "lucide-react";
 import Swal from "sweetalert2";
 import { createClient } from "@supabase/supabase-js";
 
@@ -146,7 +146,8 @@ export default function UserList() {
           />
         </div>
 
-        <div className="overflow-x-auto">
+        {/* 💻 Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
           <Table className="min-w-[900px] border border-gray-200 rounded-lg overflow-hidden">
             <TableHeader className="bg-gray-50 sticky top-0 z-10">
               <TableRow>
@@ -195,6 +196,45 @@ export default function UserList() {
           </Table>
         </div>
 
+        {/* 📱 Mobile Card */}
+        <div className="md:hidden space-y-4">
+          {data?.users?.map((u) => (
+            <div
+              key={u.personal_id}
+              className="border rounded-xl p-4 shadow-sm bg-white"
+            >
+              {/* ข้อมูลผู้ใช้ */}
+              <div className="space-y-1 mb-3">
+                <p><span className="font-medium">รหัสบัตร:</span> {u.personal_id}</p>
+                <p><span className="font-medium">ชื่อ:</span> {u.firstname}</p>
+                <p><span className="font-medium">นามสกุล:</span> {u.lastname}</p>
+                <p><span className="font-medium">Email:</span> {u.email}</p>
+                <p><span className="font-medium">เบอร์โทร:</span> {u.phone}</p>
+              </div>
+
+              {/* ปุ่มเต็มความกว้าง */}
+              <div className="grid grid-cols-2 gap-3 pt-3 border-t mt-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleViewEdit(u.personal_id)}
+                  className="border-blue-500 text-blue-600 hover:bg-blue-50 flex items-center justify-center gap-2 rounded-lg w-full"
+                >
+                  <Eye className="h-4 w-4" /> ดู / แก้ไข
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => handleDelete(u.personal_id)}
+                  className="border-red-500 text-red-600 hover:bg-red-50 flex items-center justify-center gap-2 rounded-lg w-full"
+                >
+                  <Trash2 className="h-4 w-4" /> ลบ
+                </Button>
+              </div>
+            </div>
+          ))}
+        </div>
+
         {isModalOpen && currentUser && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 animate-fadeIn">
             <div className="bg-white rounded-2xl p-6 w-96 max-w-full shadow-2xl space-y-5 transform transition-transform duration-300 scale-95 animate-slideIn">
@@ -212,11 +252,10 @@ export default function UserList() {
                       onChange={(e) =>
                         setCurrentUser({ ...currentUser, [field]: e.target.value })
                       }
-                      className={`border rounded-lg w-full px-3 py-2 focus:outline-none focus:ring-2 ${
-                        currentUser[field as keyof UserRow]?.trim() === ""
-                          ? "border-red-500 focus:ring-red-400"
-                          : "border-gray-300 focus:ring-blue-400"
-                      }`}
+                      className={`border rounded-lg w-full px-3 py-2 focus:outline-none focus:ring-2 ${currentUser[field as keyof UserRow]?.trim() === ""
+                        ? "border-red-500 focus:ring-red-400"
+                        : "border-gray-300 focus:ring-blue-400"
+                        }`}
                     />
                   </div>
                 ))}

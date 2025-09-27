@@ -123,7 +123,7 @@ export default function LoginPage() {
 
   return (
     <div className="register section">
-      <Link href="/">
+      <Link href="/" className="inline-block">
         <Button
           type="button"
           className="m-5 cursor-pointer p-6 bg-[#344CB7] text-white flex items-center gap-2 transition-all duration-150 hover:bg-[#000957] hover:text-white"

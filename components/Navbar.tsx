@@ -77,10 +77,11 @@ export default function NavBar() {
             {/* Mobile menu */}
             <div className="md:hidden">
               <DropdownMenu>
-                <DropdownMenuTrigger className="text-white text-2xl leading-none px-2 py-1">
+                <DropdownMenuTrigger className="text-white text-2xl leading-none outline-none px-2 py-1">
                   ≡
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="min-w-44">
+                <DropdownMenuContent align="end" className="min-w-44 p-2">
+                  {/* เมนูปกติ */}
                   <DropdownMenuItem asChild>
                     <Link href="/" className="flex items-center gap-2">
                       <Home className="h-4 w-4" /> หน้าแรก
@@ -101,17 +102,28 @@ export default function NavBar() {
                       <Phone className="h-4 w-4" /> ติดต่อเรา
                     </Link>
                   </DropdownMenuItem>
+
+                  <div className="border-t border-white/20 my-2"></div> {/* แบ่งเส้นระหว่างเมนูปกติกับปุ่ม */}
+
+                  {/* ปุ่มโดดเด่น */}
                   <DropdownMenuItem asChild>
-                    <Link href="/login" className="flex items-center gap-2">
-                      <LogIn className="h-4 w-4" /> เข้าสู่ระบบ
+                    <Link
+                      href="/login"
+                      className="flex items-center justify-center gap-2 mb-2 w-full px-3 py-2 bg-[#FFEB00] text-[#000957] rounded-md font-medium hover:bg-yellow-400 transition"
+                    >
+                      <LogIn className="h-4 w-4 text-[#000957]" /> เข้าสู่ระบบ
                     </Link>
                   </DropdownMenuItem>
                   <DropdownMenuItem asChild>
-                    <Link href="/register" className="flex items-center gap-2">
-                      <UserPlus className="h-4 w-4" /> สมัครสมาชิก
+                    <Link
+                      href="/register"
+                      className="flex items-center justify-center gap-2 w-full px-3 py-2 bg-[#000957] text-[#FFEB00] rounded-md font-medium border border-[#FFEB00] hover:bg-[#1a1a5a] transition"
+                    >
+                      <UserPlus className="h-4 w-4 hover:text-<color>" /> สมัครสมาชิก
                     </Link>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
+
               </DropdownMenu>
             </div>
           </div>
